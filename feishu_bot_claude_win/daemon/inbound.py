@@ -1,11 +1,15 @@
-"""Inbound pipeline: Feishu events → tmux send-keys (text/slash/menu)."""
+"""Inbound pipeline: Feishu events → tmux send-keys (text/slash/menu/image)."""
 
 from __future__ import annotations
 
 import asyncio
 import json
 import logging
+import os
+import re
+import time
 from collections import OrderedDict
+from pathlib import Path
 
 from feishu_bot_claude_win.daemon.feishu import LarkCli
 from feishu_bot_claude_win.daemon.zellij import SessionMux as Tmux
@@ -123,6 +127,16 @@ class InboundPipeline:
         if self._allow_users is not None and sender not in self._allow_users:
             logger.info("dropping message from non-whitelisted sender %s", sender)
             return
+        # ---- Image messages ----
+        # Download to a tempdir and inject the absolute file path as text.
+        # Both Claude Code TUI and Codex CLI accept image file paths (drag/drop
+        # equivalent) — pasting the path adds the image as input attachment.
+        if message_type == "image":
+            await self._handle_image(message_id, content_raw)
+            if message_id:
+                asyncio.create_task(self._react_quietly(message_id, "LOVE"))
+            return
+
         if message_type != "text":
             logger.info("skipping non-text message type: %s", message_type)
             return
@@ -140,6 +154,12 @@ class InboundPipeline:
                 text = content_raw
         if not text:
             return
+
+        # Inline images inside a text message: lark-cli's text converter
+        # rewrites embedded image elements to "[Image: img_xxx]". Scan for
+        # that pattern, download each, and replace with the absolute path.
+        text = await self._inline_images(message_id, text)
+
         if len(text) > self._max_message_length:
             text = text[: self._max_message_length] + "\n...[truncated]"
         # Ack the user's message with a reaction so they see Claude received
@@ -150,6 +170,78 @@ class InboundPipeline:
         if message_id:
             asyncio.create_task(self._react_quietly(message_id, "LOVE"))
         self._tmux.send_keys(session=self._tmux_session, keys=text + "\n")
+
+    async def _handle_image(self, message_id: str, content_raw) -> None:
+        """Standalone image message: download + inject absolute file path."""
+        image_key = self._extract_image_key(content_raw)
+        if not image_key:
+            logger.warning("image message %s missing image_key; content=%r", message_id, content_raw)
+            return
+        path = await self._download_image(message_id, image_key)
+        if path is None:
+            return
+        # Send the absolute path as input text. Claude / Codex parse pasted
+        # paths as image attachments.
+        self._tmux.send_keys(session=self._tmux_session, keys=path + "\n")
+
+    async def _inline_images(self, message_id: str, text: str) -> str:
+        """Replace any `[Image: img_xxx]` occurrences in text with downloaded paths."""
+        if "[Image:" not in text and "image_key" not in text:
+            return text
+        # lark-cli formats embedded images as "[Image: img_<key>]"
+        pattern = re.compile(r"\[Image:\s*(img_[A-Za-z0-9_-]+)\s*\]")
+        async def _replace_one(key: str) -> str:
+            p = await self._download_image(message_id, key)
+            return p if p else f"[Image: {key} (download failed)]"
+        # Find all unique keys, download each once
+        keys = list(dict.fromkeys(pattern.findall(text)))
+        if not keys:
+            return text
+        for key in keys:
+            replacement = await _replace_one(key)
+            text = text.replace(f"[Image: {key}]", replacement)
+        return text
+
+    @staticmethod
+    def _extract_image_key(content_raw) -> str | None:
+        """Pull image_key out of an image message's content.
+
+        Lark-cli flattens image content to "[Image: img_xxx]". Raw Feishu
+        webhooks send JSON `{"image_key":"img_xxx"}`. Handle both.
+        """
+        if content_raw is None:
+            return None
+        if isinstance(content_raw, str):
+            stripped = content_raw.strip()
+            if stripped.startswith("{"):
+                try:
+                    return json.loads(stripped).get("image_key")
+                except json.JSONDecodeError:
+                    pass
+            m = re.search(r"img_[A-Za-z0-9_-]+", stripped)
+            return m.group(0) if m else None
+        if isinstance(content_raw, dict):
+            return content_raw.get("image_key")
+        return None
+
+    async def _download_image(self, message_id: str, image_key: str) -> str | None:
+        """Download one image to ~/.feishu-bot-claude-win/inbox/. Returns abs path or None."""
+        if not message_id or not image_key:
+            return None
+        # Stash images per-binding so two bindings don't trample each other.
+        inbox = Path.home() / ".feishu-bot-claude-win" / "inbox" / self._tmux_session
+        inbox.mkdir(parents=True, exist_ok=True)
+        out_path = inbox / f"{int(time.time())}-{image_key}.png"
+        try:
+            return await self._lark.download_message_resource(
+                message_id=message_id,
+                file_key=image_key,
+                out_path=str(out_path),
+                resource_type="image",
+            )
+        except Exception as e:
+            logger.warning("image download failed (msg=%s key=%s): %s", message_id, image_key, e)
+            return None
 
     async def _react_quietly(self, message_id: str, emoji_type: str) -> None:
         try:

@@ -37,6 +37,19 @@ class LarkCli(ABC):
         """Attach a reaction emoji to an existing message."""
 
     @abstractmethod
+    async def download_message_resource(
+        self,
+        message_id: str,
+        file_key: str,
+        out_path: str,
+        resource_type: str = "image",
+    ) -> str:
+        """Download an image/file from a Feishu message to `out_path`.
+
+        Returns the absolute path of the saved file.
+        """
+
+    @abstractmethod
     def consume_events(self, event_key: str, max_events: int = 0) -> AsyncIterator[dict]:
         """Subscribe to a Feishu event key, yielding event dicts as they arrive.
 
@@ -124,6 +137,22 @@ class FakeLarkCli(LarkCli):
             "message_id": message_id,
             "emoji_type": emoji_type,
         })
+
+    async def download_message_resource(
+        self,
+        message_id: str,
+        file_key: str,
+        out_path: str,
+        resource_type: str = "image",
+    ) -> str:
+        self.send_calls.append({
+            "kind": "download",
+            "message_id": message_id,
+            "file_key": file_key,
+            "out_path": out_path,
+            "resource_type": resource_type,
+        })
+        return out_path
 
     async def consume_events(self, event_key: str, max_events: int = 0) -> AsyncIterator[dict]:
         emitted = 0
@@ -280,6 +309,49 @@ class RealLarkCli(LarkCli):
         out, code = await self._run_raw(args, timeout=15.0)
         if code != 0:
             raise RuntimeError(f"lark-cli add_reaction failed (exit {code}): {out!r}")
+
+    async def download_message_resource(
+        self,
+        message_id: str,
+        file_key: str,
+        out_path: str,
+        resource_type: str = "image",
+    ) -> str:
+        """Download an image or file from a Feishu message.
+
+        Wraps `lark-cli im +messages-resources-download`. The CLI rejects
+        absolute paths and `..` traversal in `--output`, so we cd into the
+        parent directory and pass just the basename.
+        """
+        import os
+        out_path = os.path.abspath(out_path)
+        parent = os.path.dirname(out_path)
+        basename = os.path.basename(out_path)
+        os.makedirs(parent, exist_ok=True)
+        args = [
+            "im", "+messages-resources-download",
+            *self._common_args(),
+            "--message-id", message_id,
+            "--file-key", file_key,
+            "--type", resource_type,
+            "--output", basename,
+        ]
+        env = os.environ.copy()
+        env.update(self._extra_env)
+        proc = await asyncio.create_subprocess_exec(
+            self._binary, *args,
+            cwd=parent,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+            env=env,
+        )
+        stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=60.0)
+        if proc.returncode != 0:
+            combined = stdout.decode() + "\n" + stderr.decode()
+            raise RuntimeError(f"lark-cli download failed (exit {proc.returncode}): {combined!r}")
+        if not os.path.exists(out_path):
+            raise RuntimeError(f"download claims to succeed but {out_path} doesn't exist")
+        return out_path
 
     async def consume_events(self, event_key: str, max_events: int = 0) -> AsyncIterator[dict]:
         args = [
