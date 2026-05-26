@@ -5,7 +5,8 @@
 
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11-blue)](https://github.com/957662/feishu-bot-claude-windows)
 [![Python](https://img.shields.io/badge/python-3.11%2B-green)](https://www.python.org/)
-[![License](https://img.shields.io/badge/license-MIT-lightgrey)]()
+[![License](https://img.shields.io/badge/license-PolyForm%20Noncommercial%201.0.0-orange)](LICENSE)
+[![Commercial](https://img.shields.io/badge/commercial%20use-prohibited%20without%20license-red)](#license)
 
 👉 **macOS 用户**:请使用姊妹仓库 [feishu-bot-claude](https://github.com/957662/feishu-bot-claude)
 
@@ -472,4 +473,33 @@ Test-Path $env:USERPROFILE\.feishu-bot-claude-win\control.port    # 应该返回
 
 ## License
 
-MIT
+本项目使用 **[PolyForm Noncommercial License 1.0.0](LICENSE)** —— **仅限非商业用途**。
+
+### ✅ 允许(免费,无需授权)
+
+- 个人在自己机器上使用、修改、阅读源码
+- 学术研究、毕业设计、教学引用
+- 在博客 / 视频 / 论坛分享代码或心得(注明出处)
+- 慈善 / 教育 / 政府机构内部使用
+- 自己业余玩、Side project
+
+### ❌ 禁止(以下都属于"商业使用",**必须先获得作者书面授权**)
+
+- 在 **公司 / 商业组织** 内部用于业务工作(即使不直接卖钱也算)
+- 打包为产品 / 服务出售
+- 提供基于本项目的 **SaaS / 托管 / 代运营** 服务
+- 在商业项目中集成使用
+- 二次包装、改名后分发以谋利
+
+### ⚠️ 违规后果
+
+未经授权进行商业使用 = **侵犯著作权**。一经发现,作者保留:
+- 要求立即停止使用并销毁所有副本
+- 追讨已发生的商业收益作为侵权赔偿
+- 提起民事 / 刑事诉讼的权利
+
+详见 [LICENSE](LICENSE) 完整条款 + [PolyForm Noncommercial 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0/) 官方说明。
+
+### 📧 商业授权咨询
+
+GitHub [@957662](https://github.com/957662) —— 在本仓库提 issue 或私信。
