@@ -1,0 +1,4 @@
+{"role": "user", "uuid": "u1", "content": [{"type": "text", "text": "读 auth.go"}]}
+{"role": "assistant", "uuid": "a1", "content": [{"type": "text", "text": "好,我读一下。"}, {"type": "tool_use", "id": "t1", "name": "Read", "input": {"file_path": "/abs/auth.go"}}]}
+{"role": "user", "uuid": "u2", "content": [{"type": "tool_result", "tool_use_id": "t1", "content": "package auth\nfunc Login() {}\nfunc Logout() {}\n"}]}
+{"role": "assistant", "uuid": "a2", "content": [{"type": "text", "text": "看完了,有 Login 和 Logout 两个函数。"}], "usage": {"input_tokens": 50, "output_tokens": 30}}

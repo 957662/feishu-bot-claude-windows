@@ -1,0 +1,4 @@
+{"role": "user", "uuid": "u1", "content": [{"type": "text", "text": "搜索一下"}]}
+{"role": "assistant", "uuid": "a1", "content": [{"type": "tool_use", "id": "t1", "name": "Task", "input": {"subagent_type": "general-purpose", "description": "search for auth code"}}]}
+{"role": "user", "uuid": "u2", "content": [{"type": "tool_result", "tool_use_id": "t1", "content": "Found 3 matches in auth.go"}]}
+{"role": "assistant", "uuid": "a2", "content": [{"type": "text", "text": "找到 3 处。"}]}

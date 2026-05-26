@@ -1,0 +1,2 @@
+{"role": "user", "uuid": "u1", "content": [{"type": "text", "text": "你好"}]}
+{"role": "assistant", "uuid": "a1", "content": [{"type": "text", "text": "你好!有什么可以帮你?"}], "usage": {"input_tokens": 10, "output_tokens": 12}}

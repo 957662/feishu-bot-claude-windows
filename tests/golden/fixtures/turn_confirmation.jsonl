@@ -1,0 +1,2 @@
+{"role": "user", "uuid": "u1", "content": [{"type": "text", "text": "/clear"}]}
+{"role": "system", "uuid": "s1", "content": [{"type": "text", "text": "Are you sure you want to clear the conversation? [y/N]"}], "subtype": "confirmation_prompt"}

@@ -1,0 +1,38 @@
+{
+  "schema": "2.0",
+  "header": {
+    "template": "purple",
+    "title": {
+      "tag": "plain_text",
+      "content": "🤖 Claude · test-project"
+    }
+  },
+  "body": {
+    "elements": [
+      {
+        "tag": "collapsible_panel",
+        "expanded": false,
+        "header": {
+          "title": {
+            "tag": "plain_text",
+            "content": "💻 Bash  ls -la /tmp  ✓  200 lines"
+          }
+        },
+        "elements": [
+          {
+            "tag": "markdown",
+            "content": "```\nfake-line-0\nfake-line-1\nfake-line-2\nfake-line-3\nfake-line-4\nfake-line-5\nfake-line-6\nfake-line-7\nfake-line-8\nfake-line-9\nfake-line-10\nfake-line-11\nfake-line-12\nfake-line-13\nfake-line-14\nfake-line-15\nfake-line-16\nfake-line-17\nfake-line-18\nfake-line-19\nfake-line-20\nfake-line-21\nfake-line-22\nfake-line-23\nfake-line-24\nfake-line-25\nfake-line-26\nfake-line-27\nfake-line-28\nfake-line-29\nfake-line-30\nfake-line-31\nfake-line-32\nfake-line-33\nfake-line-34\nfake-line-35\nfake-line-36\nfake-line-37\nfake-line-38\nfake-line-39\nfake-line-40\nfake-line-41\nfake-line-42\nfake-line-43\nfake-line-44\nfake-line-45\nfake-line-46\nfake-line-47\nfake-line-48\nfake-line-49\nfake-line-50\nfake-line-51\nfake-line-52\nfake-line-53\nfake-line-54\nfake-line-55\nfake-line-56\nfake-line-57\nfake-line-58\nfake-line-59\n```\n_...省略 140 行..._"
+          }
+        ]
+      },
+      {
+        "tag": "markdown",
+        "content": "好多文件,我列了 200 行。"
+      },
+      {
+        "tag": "markdown",
+        "content": "<font color='grey'>500+20 tokens</font>"
+      }
+    ]
+  }
+}

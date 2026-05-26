@@ -1,0 +1,22 @@
+{
+  "schema": "2.0",
+  "header": {
+    "template": "purple",
+    "title": {
+      "tag": "plain_text",
+      "content": "🤖 Claude · test-project"
+    }
+  },
+  "body": {
+    "elements": [
+      {
+        "tag": "markdown",
+        "content": "你好!有什么可以帮你?"
+      },
+      {
+        "tag": "markdown",
+        "content": "<font color='grey'>10+12 tokens</font>"
+      }
+    ]
+  }
+}

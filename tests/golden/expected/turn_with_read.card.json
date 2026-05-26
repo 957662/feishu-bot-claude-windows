@@ -1,0 +1,42 @@
+{
+  "schema": "2.0",
+  "header": {
+    "template": "purple",
+    "title": {
+      "tag": "plain_text",
+      "content": "🤖 Claude · test-project"
+    }
+  },
+  "body": {
+    "elements": [
+      {
+        "tag": "markdown",
+        "content": "好,我读一下。"
+      },
+      {
+        "tag": "collapsible_panel",
+        "expanded": false,
+        "header": {
+          "title": {
+            "tag": "plain_text",
+            "content": "📖 Read  auth.go  ✓  4 lines"
+          }
+        },
+        "elements": [
+          {
+            "tag": "markdown",
+            "content": "```\npackage auth\nfunc Login() {}\nfunc Logout() {}\n\n```"
+          }
+        ]
+      },
+      {
+        "tag": "markdown",
+        "content": "看完了,有 Login 和 Logout 两个函数。"
+      },
+      {
+        "tag": "markdown",
+        "content": "<font color='grey'>50+30 tokens</font>"
+      }
+    ]
+  }
+}
