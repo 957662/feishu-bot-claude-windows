@@ -50,6 +50,12 @@ class LarkCli(ABC):
         """
 
     @abstractmethod
+    async def upload_image(self, path: str) -> str:
+        """Upload a local image file to Feishu IM. Returns the `image_key`
+        (img_xxx) usable in cards / messages.
+        """
+
+    @abstractmethod
     def consume_events(self, event_key: str, max_events: int = 0) -> AsyncIterator[dict]:
         """Subscribe to a Feishu event key, yielding event dicts as they arrive.
 
@@ -153,6 +159,12 @@ class FakeLarkCli(LarkCli):
             "resource_type": resource_type,
         })
         return out_path
+
+    async def upload_image(self, path: str) -> str:
+        self._counter += 1
+        key = f"img_fake_{self._counter}"
+        self.send_calls.append({"kind": "upload", "path": path, "image_key": key})
+        return key
 
     async def consume_events(self, event_key: str, max_events: int = 0) -> AsyncIterator[dict]:
         emitted = 0
@@ -352,6 +364,57 @@ class RealLarkCli(LarkCli):
         if not os.path.exists(out_path):
             raise RuntimeError(f"download claims to succeed but {out_path} doesn't exist")
         return out_path
+
+    async def upload_image(self, path: str) -> str:
+        """Upload an image to Feishu IM. Returns `image_key` (img_xxx).
+
+        Wraps `lark-cli im images create --file image=<path> --data
+        '{"image_type":"message"}'`. The response JSON contains the image_key.
+        """
+        import os
+        if not os.path.exists(path):
+            raise RuntimeError(f"upload_image: file not found: {path}")
+        args = [
+            "im", "images", "create",
+            *self._common_args(),
+            "--file", f"image={path}",
+            "--data", json.dumps({"image_type": "message"}),
+        ]
+        out, code = await self._run_raw(args, timeout=60.0)
+        if code != 0:
+            raise RuntimeError(f"lark-cli upload_image failed (exit {code}): {out!r}")
+        # Parse response — image_key is under data.image_key
+        try:
+            payload = json.loads(out.strip())
+        except json.JSONDecodeError:
+            # try line-by-line
+            payload = None
+            for line in reversed(out.strip().splitlines()):
+                line = line.strip()
+                if line.startswith("{") and line.endswith("}"):
+                    try:
+                        payload = json.loads(line)
+                        break
+                    except json.JSONDecodeError:
+                        continue
+        if not payload:
+            raise RuntimeError(f"upload_image: cannot parse output: {out!r}")
+        key = None
+        for path_keys in (("image_key",), ("data", "image_key")):
+            node = payload
+            ok = True
+            for k in path_keys:
+                if isinstance(node, dict) and k in node:
+                    node = node[k]
+                else:
+                    ok = False
+                    break
+            if ok and isinstance(node, str) and node:
+                key = node
+                break
+        if not key:
+            raise RuntimeError(f"upload_image: image_key missing in response: {payload!r}")
+        return key
 
     async def consume_events(self, event_key: str, max_events: int = 0) -> AsyncIterator[dict]:
         args = [
