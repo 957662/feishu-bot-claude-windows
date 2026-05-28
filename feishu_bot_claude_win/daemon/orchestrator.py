@@ -102,10 +102,18 @@ class Orchestrator:
         def _on_chat_discovered(chat_id: str):
             return outbound.bootstrap_with_chat_id(chat_id)
 
+        from feishu_bot_claude_win.menu_template import (
+            DEFAULT_MENU_COMMAND_MAP,
+            DEFAULT_MENU_SPECIAL_MAP,
+            DEFAULT_MENU_YESNO_MAP,
+        )
         inbound = InboundPipeline(
             tmux_session=cfg.tmux_session,
             tmux=tmux,
             lark=lark,
+            menu_command_map=DEFAULT_MENU_COMMAND_MAP,
+            menu_special_map=DEFAULT_MENU_SPECIAL_MAP,
+            menu_yesno_map=DEFAULT_MENU_YESNO_MAP,
             allow_users=set(cfg.allow_users) if cfg.allow_users else None,
             max_message_length=cfg.max_message_length,
             on_chat_id_discovered=_on_chat_discovered,

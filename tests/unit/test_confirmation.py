@@ -37,8 +37,13 @@ async def test_confirm_yes_sends_y_to_tmux():
         menu_command_map=DEFAULT_CONFIRM_MAP,
     )
     await pipeline.process_until_idle(max_events=1)
-    send_keys_calls = [c for c in tmux.calls if c[0] == "send_keys"]
-    assert send_keys_calls[-1][1]["keys"] == "y\n"
+    send_calls = [c for c in tmux.calls if c[0] in ("send_keys", "send_special")]
+    typed = "".join(
+        c[1].get("keys", "") if c[0] == "send_keys" else
+        ("\n" if c[1]["key"] == "Enter" else "")
+        for c in send_calls
+    )
+    assert typed == "y\n"
 
 
 @pytest.mark.asyncio
@@ -55,5 +60,10 @@ async def test_confirm_no_sends_n_to_tmux():
         menu_command_map=DEFAULT_CONFIRM_MAP,
     )
     await pipeline.process_until_idle(max_events=1)
-    send_keys_calls = [c for c in tmux.calls if c[0] == "send_keys"]
-    assert send_keys_calls[-1][1]["keys"] == "n\n"
+    send_calls = [c for c in tmux.calls if c[0] in ("send_keys", "send_special")]
+    typed = "".join(
+        c[1].get("keys", "") if c[0] == "send_keys" else
+        ("\n" if c[1]["key"] == "Enter" else "")
+        for c in send_calls
+    )
+    assert typed == "n\n"

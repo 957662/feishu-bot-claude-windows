@@ -33,6 +33,9 @@ class SessionMux(ABC):
     def send_keys(self, session: str, keys: str) -> None: ...
 
     @abstractmethod
+    def send_special(self, session: str, key: str) -> None: ...
+
+    @abstractmethod
     def kill_session(self, name: str) -> None: ...
 
 
@@ -70,6 +73,11 @@ class FakeZellij(SessionMux):
         if session not in self._sessions:
             raise RuntimeError(f"no session: {session!r}")
         self.calls.append(("send_keys", {"session": session, "keys": keys}))
+
+    def send_special(self, session: str, key: str) -> None:
+        if session not in self._sessions:
+            raise RuntimeError(f"no session: {session!r}")
+        self.calls.append(("send_special", {"session": session, "key": key}))
 
     def kill_session(self, name: str) -> None:
         self.calls.append(("kill_session", {"name": name}))
@@ -165,6 +173,40 @@ class RealZellij(SessionMux):
                 if self._looks_like_no_session(msg):
                     raise RuntimeError(f"no session: {session!r}")
                 raise RuntimeError(f"zellij write Enter failed: {msg}")
+
+    # Map symbolic key names → list of ASCII byte codes that produce the same
+    # behavior in a typical terminal. zellij's `action write` takes raw byte
+    # codes, so terminal escape sequences (Up = ESC[A, etc.) must be encoded
+    # as 3 numbers.
+    _SPECIAL_KEY_BYTES = {
+        "Escape": [27],
+        "Enter":  [13],
+        "Tab":    [9],
+        "BSpace": [127],
+        "Up":     [27, 91, 65],
+        "Down":   [27, 91, 66],
+        "Right":  [27, 91, 67],
+        "Left":   [27, 91, 68],
+        "M-Enter": [27, 13],     # Alt+Enter → soft newline in Claude/Codex input
+        "C-c":    [3],
+        "C-d":    [4],
+        "C-l":    [12],
+        "C-u":    [21],
+    }
+
+    def send_special(self, session: str, key: str) -> None:
+        codes = self._SPECIAL_KEY_BYTES.get(key)
+        if codes is None:
+            raise ValueError(f"unknown special key: {key!r}")
+        result = subprocess.run(
+            [self._binary, "--session", session, "action", "write", *map(str, codes)],
+            capture_output=True, text=True,
+        )
+        if result.returncode != 0:
+            msg = (result.stderr + result.stdout).strip()
+            if self._looks_like_no_session(msg):
+                raise RuntimeError(f"no session: {session!r}")
+            raise RuntimeError(f"zellij action write {key!r} failed: {msg}")
 
     def kill_session(self, name: str) -> None:
         result = subprocess.run(
