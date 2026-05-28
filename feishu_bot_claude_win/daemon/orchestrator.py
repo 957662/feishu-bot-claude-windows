@@ -282,7 +282,7 @@ class Orchestrator:
     def _guess_jsonl_path(self, cfg: BindingConfig) -> Path:
         """Find newest jsonl in ~/.claude/projects/<encoded-cwd>/ — mtime-based."""
         home = Path.home()
-        encoded = cfg.project_dir.replace("/", "-").lstrip("-")
+        encoded = cfg.project_dir.replace("\\", "-").replace("/", "-").replace(":", "").lstrip("-")
         projects_dir = home / ".claude" / "projects" / f"-{encoded}"
         if not projects_dir.exists():
             return projects_dir / "no-session.jsonl"

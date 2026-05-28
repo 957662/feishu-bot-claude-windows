@@ -341,8 +341,9 @@ def render_turn_to_card(
         # so the cursor stuck to the text tail, but Feishu's renderer turns
         # those into a stuck black square instead of an animated cursor.
         import time
-        # Braille spinner — Feishu renders these correctly; 8 fps rotation.
-        spinner = ["⣾", "⣽", "⣻", "⢿", "⡿", "⣟", "⣯", "⣷"][int(time.time() * 20) % 8]
+        # Braille spinner — uniform 7-dot frames, 2.5 cycles/s. monotonic so
+        # an NTP step doesn't make the animation jump backwards.
+        spinner = ["⣾", "⣽", "⣻", "⢿", "⡿", "⣟", "⣯", "⣷"][int(time.monotonic() * 20) % 8]
         # Elapsed: take first event's timestamp if present.
         started = None
         for e in turn.assistant_events:

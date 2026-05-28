@@ -54,6 +54,23 @@ function Refresh-Path {
     $machine = [Environment]::GetEnvironmentVariable("Path", "Machine")
     $user    = [Environment]::GetEnvironmentVariable("Path", "User")
     $env:Path = "$machine;$user"
+    # Winget sometimes writes PATH out-of-band of the env block. Add known
+    # install locations so the *current* PowerShell session can find newly
+    # installed binaries without forcing the user to reopen the shell.
+    $wellKnown = @(
+        "$env:LOCALAPPDATA\Programs\Python\Python312",
+        "$env:LOCALAPPDATA\Programs\Python\Python312\Scripts",
+        "$env:LOCALAPPDATA\Programs\Python\Python311",
+        "$env:LOCALAPPDATA\Programs\Python\Python311\Scripts",
+        "$env:ProgramFiles\nodejs",
+        "$env:ProgramFiles\NSSM",
+        "$env:LOCALAPPDATA\Microsoft\WinGet\Links"
+    )
+    foreach ($dir in $wellKnown) {
+        if ((Test-Path $dir) -and ($env:Path -notlike "*$dir*")) {
+            $env:Path = "$dir;$env:Path"
+        }
+    }
 }
 
 function Ensure-Winget {

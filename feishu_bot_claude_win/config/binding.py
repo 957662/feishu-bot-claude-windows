@@ -14,6 +14,15 @@ import tomli_w
 
 # Cross-platform exclusive file locking. fcntl is POSIX-only; on Windows
 # we fall back to msvcrt.locking (blocking, region-based on the open fd).
+#
+# Semantic differences worth knowing:
+# - fcntl.flock(LOCK_EX) blocks indefinitely until acquired (advisory lock).
+# - msvcrt.locking(LK_LOCK) retries 10 × 1s then raises OSError; it is also
+#   a MANDATORY lock (the OS enforces it against other readers/writers, and
+#   only releases it when the process exits if the fd leaks).
+# We hold the lock only for the brief temp-and-rename swap of bindings.toml,
+# so 10s of contention is highly unlikely in practice; if it happens the
+# caller will get an OSError they can retry.
 if sys.platform == "win32":
     import msvcrt
     _USE_FCNTL = False
