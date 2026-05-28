@@ -159,6 +159,7 @@ def render_turn_to_card(
     project_name: str = "project",
     render_style: str = "rich",
     image_keys: dict[str, str] | None = None,
+    in_progress: bool = False,
 ) -> dict:
     """Render a Turn to a Feishu interactive card JSON.
 
@@ -166,6 +167,11 @@ def render_turn_to_card(
     each known path gets an `img` element appended after the text/tool block
     that referenced it. Paths not in the map (upload failed or skipped) are
     left as text — no broken-image markers.
+
+    `in_progress=True` (the current turn is still being written) appends a
+    "思考中…" pacer at the bottom. Subsequent updates rewrite the card with
+    fresh content, giving the user a live-feedback feeling — flush after
+    flush, as the watcher polls the jsonl every 2s.
     """
     image_keys = image_keys or {}
     elements: list[dict] = []
@@ -207,6 +213,14 @@ def render_turn_to_card(
 
     if total_in or total_out:
         elements.append(build_note(f"{total_in}+{total_out} tokens"))
+
+    if in_progress:
+        # Pacer "spinner" — alt between dot patterns by the second so each
+        # update_card visibly differs (Feishu can swallow identical re-sends).
+        import time
+        n = int(time.time()) % 4
+        dots = "·" * n + " " * (3 - n)
+        elements.append(build_note(f"⏳ 思考中…{dots}"))
 
     header = build_header(title=f"🤖 Claude · {project_name}")
     return build_card(header=header, elements=elements)
