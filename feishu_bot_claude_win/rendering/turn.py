@@ -336,28 +336,14 @@ def render_turn_to_card(
         elements.append(build_note(f"{total_in}+{total_out} tokens"))
 
     if in_progress:
-        # Typewriter cursor — attach a blinking ▌ to the LAST markdown element
-        # so the cursor appears at the end of the generated text. Falls back
-        # to a standalone note if there's no markdown to anchor to (e.g. turn
-        # is purely tool calls so far).
+        # Status footer only — no inline cursor. Earlier versions tried to
+        # attach blink-cycle block-element chars (▌▍▎▏) to the last markdown
+        # so the cursor stuck to the text tail, but Feishu's renderer turns
+        # those into a stuck black square instead of an animated cursor.
         import time
-        # 0.5s blink: cursor visible on even half-seconds, dim on odd
-        tick = int(time.time() * 2) % 4
-        cursors = ["▌", "▍", "▎", "▏"]
-        cursor = cursors[tick]
-        anchored = False
-        for el in reversed(elements):
-            if el.get("tag") == "markdown" and isinstance(el.get("content"), str):
-                # Append cursor inline (avoid second \n that breaks the visual
-                # flow). Guard against the cursor lingering from a prior render.
-                base = el["content"].rstrip("▌▍▎▏ \n")
-                el["content"] = base + " " + cursor
-                anchored = True
-                break
-        # Footer: spinner + elapsed + token count (signals progress even when
-        # the cursor is on a long tool block that won't repaint).
-        spinner = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"][int(time.time() * 8) % 10]
-        # Elapsed: take first event's timestamp if present
+        # Braille spinner — Feishu renders these correctly; 8 fps rotation.
+        spinner = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"][int(time.time() * 10) % 10]
+        # Elapsed: take first event's timestamp if present.
         started = None
         for e in turn.assistant_events:
             ts = e.raw.get("timestamp")
@@ -370,13 +356,11 @@ def render_turn_to_card(
                 import datetime
                 t0 = datetime.datetime.fromisoformat(started.replace("Z", "+00:00")).timestamp()
                 secs = int(time.time() - t0)
-                if secs >= 0 and secs < 7200:  # sanity cap
+                if 0 <= secs < 7200:
                     elapsed = f"  ·  ⏱ {secs}s"
             except Exception:
                 pass
         tk = f"  ·  {total_in + total_out:,} tokens" if (total_in or total_out) else ""
-        if not anchored:
-            elements.append(build_markdown(cursor))
         elements.append(build_note(f"{spinner} 生成中{elapsed}{tk}"))
 
     header = build_header(title=f"🤖 Claude · {project_name}")
