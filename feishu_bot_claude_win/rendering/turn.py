@@ -336,12 +336,48 @@ def render_turn_to_card(
         elements.append(build_note(f"{total_in}+{total_out} tokens"))
 
     if in_progress:
-        # Pacer "spinner" — alt between dot patterns by the second so each
-        # update_card visibly differs (Feishu can swallow identical re-sends).
+        # Typewriter cursor — attach a blinking ▌ to the LAST markdown element
+        # so the cursor appears at the end of the generated text. Falls back
+        # to a standalone note if there's no markdown to anchor to (e.g. turn
+        # is purely tool calls so far).
         import time
-        n = int(time.time()) % 4
-        dots = "·" * n + " " * (3 - n)
-        elements.append(build_note(f"⏳ 思考中…{dots}"))
+        # 0.5s blink: cursor visible on even half-seconds, dim on odd
+        tick = int(time.time() * 2) % 4
+        cursors = ["▌", "▍", "▎", "▏"]
+        cursor = cursors[tick]
+        anchored = False
+        for el in reversed(elements):
+            if el.get("tag") == "markdown" and isinstance(el.get("content"), str):
+                # Append cursor inline (avoid second \n that breaks the visual
+                # flow). Guard against the cursor lingering from a prior render.
+                base = el["content"].rstrip("▌▍▎▏ \n")
+                el["content"] = base + " " + cursor
+                anchored = True
+                break
+        # Footer: spinner + elapsed + token count (signals progress even when
+        # the cursor is on a long tool block that won't repaint).
+        spinner = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"][int(time.time() * 8) % 10]
+        # Elapsed: take first event's timestamp if present
+        started = None
+        for e in turn.assistant_events:
+            ts = e.raw.get("timestamp")
+            if isinstance(ts, str) and ts:
+                started = ts
+                break
+        elapsed = ""
+        if started:
+            try:
+                import datetime
+                t0 = datetime.datetime.fromisoformat(started.replace("Z", "+00:00")).timestamp()
+                secs = int(time.time() - t0)
+                if secs >= 0 and secs < 7200:  # sanity cap
+                    elapsed = f"  ·  ⏱ {secs}s"
+            except Exception:
+                pass
+        tk = f"  ·  {total_in + total_out:,} tokens" if (total_in or total_out) else ""
+        if not anchored:
+            elements.append(build_markdown(cursor))
+        elements.append(build_note(f"{spinner} 生成中{elapsed}{tk}"))
 
     header = build_header(title=f"🤖 Claude · {project_name}")
     return build_card(header=header, elements=elements)
