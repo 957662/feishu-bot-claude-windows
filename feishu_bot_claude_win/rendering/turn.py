@@ -342,7 +342,7 @@ def render_turn_to_card(
         # those into a stuck black square instead of an animated cursor.
         import time
         # Braille spinner — Feishu renders these correctly; 8 fps rotation.
-        spinner = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"][int(time.time() * 10) % 10]
+        spinner = ["⣾", "⣽", "⣻", "⢿", "⡿", "⣟", "⣯", "⣷"][int(time.time() * 20) % 8]
         # Elapsed: take first event's timestamp if present.
         started = None
         for e in turn.assistant_events:
