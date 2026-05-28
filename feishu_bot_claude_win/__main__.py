@@ -48,6 +48,7 @@ async def _run_daemon() -> None:
         """RealLarkCli with WS event source for menu_v6 + card.action.trigger."""
         secret = keychain.get(cfg.secret_ref) if cfg.secret_ref else None
         return RealLarkCli(
+            profile=cfg.name,
             ws_app_id=cfg.feishu_app_id,
             ws_app_secret=secret,
             ws_domain=cfg.domain or "https://open.feishu.cn",
