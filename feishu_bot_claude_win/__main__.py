@@ -42,14 +42,24 @@ async def _run_daemon() -> None:
     from feishu_bot_claude_win.config.keychain import WindowsCredentialStore
 
     store = BindingStore(bindings_path)
+    keychain = WindowsCredentialStore()
+
+    def _lark_for_binding(cfg) -> RealLarkCli:
+        """RealLarkCli with WS event source for menu_v6 + card.action.trigger."""
+        secret = keychain.get(cfg.secret_ref) if cfg.secret_ref else None
+        return RealLarkCli(
+            ws_app_id=cfg.feishu_app_id,
+            ws_app_secret=secret,
+            ws_domain=cfg.domain or "https://open.feishu.cn",
+        )
+
     orchestrator = Orchestrator(
         store=store,
         tmux_factory=lambda name: RealZellij(),
-        lark_factory=lambda cfg: RealLarkCli(),
+        lark_factory=_lark_for_binding,
         data_dir=data_dir,
     )
 
-    keychain = WindowsCredentialStore()
     real_lark = RealLarkCli()
 
     server = await serve(

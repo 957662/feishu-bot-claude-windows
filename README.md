@@ -159,6 +159,8 @@
 
 > **注**:`lark-cli` 不用预装,`setup.ps1` 会自动 `npm i -g @larksuite/cli`。
 
+> **可选**:装 `mermaid-cli` 可以把 ` ```mermaid ` 代码块自动渲染成图片插到卡片里 — `npm i -g @mermaid-js/mermaid-cli`。没装也能跑,会自动回退到 `mermaid.ink` 在线服务;两个都失败时保留原始代码块文本。
+
 ## 📥 安装
 
 打开 PowerShell(管理员权限或普通都行,但建议**普通用户**就够,服务装到 user 级别):
