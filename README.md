@@ -145,30 +145,38 @@
 
 ## 🛠️ 前置准备
 
-要跑起来,你需要装这些(setup.ps1 会检查,缺了就报错):
+要跑起来,**setup.ps1 会全自动检测 + 用 winget 装好下面这些**(每个都会问你):
 
-| 工具 | 是什么 | 安装命令 |
+| 工具 | 是什么 | setup.ps1 会自动跑 |
 |---|---|---|
 | **Windows 10/11** | 这个项目只支持 Windows(macOS 用姊妹仓) | — |
+| **winget** | Windows 自带的包管理器 | 没有的话需要去 Microsoft Store 装 "App Installer" |
 | **Python 3.11+** | 项目用的语言 | `winget install Python.Python.3.12` |
 | **Node.js 16+** | 装 `lark-cli` 用 | `winget install OpenJS.NodeJS.LTS` |
-| **NSSM** | 把 daemon 注册成 Windows 服务用 | `winget install NSSM.NSSM` |
-| **zellij** | 终端复用器,Claude 跑在它里面 | `winget install zellij-org.zellij` 或 `scoop install zellij` |
-| **Claude Code** | 你要遥控的对象 | [claude.com/code](https://claude.com/code) |
+| **NSSM** | 把 daemon 注册成 Windows 服务用 | `winget install NSSM.NSSM`(需要管理员) |
+| **zellij** | 终端复用器,Claude 跑在它里面 | `winget install zellij-org.zellij` |
+| **Claude Code** | 你要遥控的对象 | `npm i -g @anthropic-ai/claude-code` |
+| **lark-cli** | 飞书 CLI | `npm i -g @larksuite/cli` |
+| **mmdc(可选)** | 渲染 mermaid 图 | `npm i -g @mermaid-js/mermaid-cli` |
 | **飞书账号** | 用来扫码登录、收发消息 | 国内版 `feishu.cn` |
-
-> **注**:`lark-cli` 不用预装,`setup.ps1` 会自动 `npm i -g @larksuite/cli`。
-
-> **可选**:装 `mermaid-cli` 可以把 ` ```mermaid ` 代码块自动渲染成图片插到卡片里 — `npm i -g @mermaid-js/mermaid-cli`。没装也能跑,会自动回退到 `mermaid.ink` 在线服务;两个都失败时保留原始代码块文本。
 
 ## 📥 安装
 
-打开 PowerShell(管理员权限或普通都行,但建议**普通用户**就够,服务装到 user 级别):
+要装服务,**需要管理员 PowerShell**(右键 PowerShell → 以管理员身份运行)。
+不用管理员也能跑,但 NSSM 服务部分会被跳过 — 装完依赖后再用管理员重跑一次即可。
 
 ```powershell
 git clone https://github.com/957662/feishu-bot-claude-windows
 cd feishu-bot-claude-windows
+
+# 交互式
 pwsh -ExecutionPolicy Bypass -File .\setup.ps1
+
+# 一把梭(全部 Y)
+pwsh -ExecutionPolicy Bypass -File .\setup.ps1 -Yes
+
+# 只检测不装
+pwsh -ExecutionPolicy Bypass -File .\setup.ps1 -Doctor
 ```
 
 `setup.ps1` 会按顺序做这些:
