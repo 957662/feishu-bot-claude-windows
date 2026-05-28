@@ -51,7 +51,7 @@ async def test_start_binding_requires_tmux_session(orch_setup):
     project_dir.mkdir()
     cfg = _config(project_dir=str(project_dir), name="foo-bot")
     store.add(cfg)
-    with pytest.raises(RuntimeError, match="tmux session.*not running"):
+    with pytest.raises(RuntimeError, match="zellij session.*not running"):
         await orch.start_binding(cwd=str(project_dir))
 
 
