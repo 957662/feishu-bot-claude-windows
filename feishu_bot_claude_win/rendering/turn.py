@@ -115,6 +115,44 @@ _IMAGE_PATH_RE = re.compile(
     re.IGNORECASE,
 )
 
+# Non-image, non-binary user-readable file extensions that we'll auto-upload
+# to Feishu so the user can grab them from the bot chat. PNG/JPG/etc go
+# through the IMAGE path. We deliberately skip very large binaries (.zip,
+# .tar.gz, etc.) — they'd be too easy to spam.
+_FILE_PATH_RE = re.compile(
+    r"(?<![\w./])"  # path boundary on the left
+    r"(?P<path>(?:/[\w./\-]+|[A-Za-z]:\\[\w.\\\- ]+)\."
+    r"(?:pdf|txt|md|markdown|csv|tsv|json|yaml|yml|toml|xml|"
+    r"py|js|ts|tsx|jsx|go|rs|java|kt|swift|c|h|cpp|hpp|cs|rb|php|"
+    r"sh|bash|zsh|fish|sql|html|css|scss|log|conf|ini|cfg|"
+    r"docx?|xlsx?|pptx?))"
+    r"(?![\w])",
+    re.IGNORECASE,
+)
+
+
+def collect_file_paths(turn: Turn) -> list[str]:
+    """Like collect_image_paths but for non-image text files.
+
+    Sources mirror image collection: text parts, tool_result content. Returned
+    paths are absolute (matched by regex) and deduplicated in encounter order.
+    """
+    seen: dict[str, None] = {}
+    for event in turn.assistant_events:
+        for part in event.content:
+            ptype = part.get("type")
+            if ptype == "text" and isinstance(part.get("text"), str):
+                for m in _FILE_PATH_RE.finditer(part["text"]):
+                    seen.setdefault(m.group("path"), None)
+            elif ptype == "tool_result":
+                content = part.get("content", "")
+                if isinstance(content, list):
+                    content = "".join(c.get("text", "") if isinstance(c, dict) else str(c) for c in content)
+                if isinstance(content, str):
+                    for m in _FILE_PATH_RE.finditer(content):
+                        seen.setdefault(m.group("path"), None)
+    return list(seen.keys())
+
 
 def _truncate(text: str, limit: int) -> str:
     if len(text) <= limit:
