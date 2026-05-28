@@ -68,7 +68,7 @@
 |---|---|---|
 | 会话多路复用器 | `tmux` | [`zellij`](https://github.com/zellij-org/zellij) |
 | Daemon 进程守护 | `launchd` plist | [NSSM](https://nssm.cc/) 注册的 Windows Service |
-| 控制通道 | Unix 域套接字 `~/.feishu-bot-claude/control.sock` | TCP loopback `127.0.0.1:<动态端口>`(端口写入 `~/.feishu-bot-claude-win/control.port`) |
+| 控制通道 | Unix 域套接字 `~/.feishu-bot-claude/control.sock` | TCP loopback `127.0.0.1:<动态端口>`(端口写入 `%USERPROFILE%\.feishu-bot-claude-win\control.port`) |
 | 密钥存储 | macOS Keychain (`security` CLI) | Windows 凭据管理器 (`win32cred` via pywin32) |
 | CLI 入口 | `/opt/homebrew/bin/` 软链接 | `%LOCALAPPDATA%\Programs\…` 下的 `.cmd` shim |
 | 浏览器自动打开 | `open` | `os.startfile()`(走系统默认处理程序) |

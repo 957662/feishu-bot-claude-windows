@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import fcntl
 import os
+import sys
 import tomllib
 from contextlib import contextmanager
 from dataclasses import dataclass, field
@@ -11,6 +11,15 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import tomli_w
+
+# Cross-platform exclusive file locking. fcntl is POSIX-only; on Windows
+# we fall back to msvcrt.locking (blocking, region-based on the open fd).
+if sys.platform == "win32":
+    import msvcrt
+    _USE_FCNTL = False
+else:
+    import fcntl
+    _USE_FCNTL = True
 
 
 @contextmanager
@@ -20,11 +29,21 @@ def _exclusive_lock(path: Path):
     lock_path.parent.mkdir(parents=True, exist_ok=True)
     fd = os.open(lock_path, os.O_CREAT | os.O_RDWR, 0o600)
     try:
-        fcntl.flock(fd, fcntl.LOCK_EX)
+        if _USE_FCNTL:
+            fcntl.flock(fd, fcntl.LOCK_EX)
+        else:
+            # Lock 1 byte at offset 0 to serialize access to the whole file.
+            msvcrt.locking(fd, msvcrt.LK_LOCK, 1)
         yield
     finally:
-        fcntl.flock(fd, fcntl.LOCK_UN)
-        os.close(fd)
+        try:
+            if _USE_FCNTL:
+                fcntl.flock(fd, fcntl.LOCK_UN)
+            else:
+                os.lseek(fd, 0, os.SEEK_SET)
+                msvcrt.locking(fd, msvcrt.LK_UNLCK, 1)
+        finally:
+            os.close(fd)
 
 
 _VALID_RENDER_STYLES = {"minimal", "full", "rich"}

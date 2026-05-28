@@ -150,9 +150,19 @@ def render_mermaid_to_png(code: str, cache_dir: Path) -> Optional[Path]:
 
 
 def default_cache_dir() -> Path:
-    """Default cache location: ~/.cache/feishu-bot-claude-win/mermaid (or env override)."""
+    """Default cache location, OS-appropriate.
+
+    Windows: %LOCALAPPDATA%\\feishu-bot-claude-win\\cache\\mermaid
+    macOS/Linux: $XDG_CACHE_HOME/feishu-bot-claude-win/mermaid or ~/.cache/...
+
+    FEISHU_BOT_MERMAID_CACHE env var overrides everything.
+    """
     override = os.environ.get("FEISHU_BOT_MERMAID_CACHE")
     if override:
         return Path(override)
+    import sys
+    if sys.platform == "win32":
+        base = os.environ.get("LOCALAPPDATA") or os.path.expanduser("~\\AppData\\Local")
+        return Path(base) / "feishu-bot-claude-win" / "cache" / "mermaid"
     base = os.environ.get("XDG_CACHE_HOME") or os.path.expanduser("~/.cache")
     return Path(base) / "feishu-bot-claude-win" / "mermaid"
