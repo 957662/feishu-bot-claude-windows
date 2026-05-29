@@ -1,9 +1,12 @@
 name: CI
 
-# Runs the suite on a real Windows runner so platform-specific code paths
-# (msvcrt file locking, win32cred Credential Manager, cp1252 default encoding,
-# ProactorEventLoop subprocess handling) are actually exercised — these cannot
-# be verified on the macOS/Linux dev hosts the package was originally written on.
+# Runs the unit suite on every push/PR. This is the cross-repo regression net:
+# the 4 feishu-bot-* repos mirror each other and shared fixes have been lost in
+# manual syncs before — a regressed unit test (esp. test_p0_regressions.py)
+# turns CI red here.
+#
+# Integration tests (tests/integration, tests/golden) need a real tmux/zellij
+# server or recorded sessions and are intentionally NOT run in CI.
 
 on:
   push:
@@ -12,7 +15,7 @@ on:
 
 jobs:
   test:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version: ["3.11", "3.12"]
@@ -26,5 +29,5 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[win,dev]"
-      - name: Test
-        run: pytest -q
+      - name: Test (unit)
+        run: pytest tests/unit -q
